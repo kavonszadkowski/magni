@@ -3,7 +3,7 @@
 # adapting camera parameters
 import asyncio
 from datetime import datetime
-import evdev                   # for input from mouse and command line
+import evdev  # for input from mouse and command line
 #from gpiozero import Button    # for external buttons
 
 # load available camera lib (picamera on legacy, picamera2 on newer OS) 
@@ -496,10 +496,10 @@ scale(factor)
 
 try:
     devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
+    loop = asyncio.get_event_loop()
     for device in devices:
         device.grab()
-        asyncio.ensure_future(handle_events(device))
-    loop = asyncio.get_event_loop()
+        loop.create_task(handle_events(device))
     loop.run_forever()
 
 finally:
