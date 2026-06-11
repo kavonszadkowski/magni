@@ -238,12 +238,26 @@ def scale(new_factor):
     # in current OS compute pixel positions in sensor based on scale factor and screen ratio
     screen_w, screen_h = screen
     screen_ratio = screen_w / screen_h
-    x, y, camera_w, camera_h = camera.camera_properties['ScalerCropMaximum']
+    
+    # Check if camera has the required properties
+    if not hasattr(camera, 'camera_properties'):
+        print("Warning: camera_properties not available, skipping crop")
+        return
+    
+    try:
+        x, y, camera_w, camera_h = camera.camera_properties['ScalerCropMaximum']
+    except KeyError as e:
+        print(f"Warning: ScalerCropMaximum not found: {e}")
+        return
+    except Exception as e:
+        print(f"Warning: Failed to get camera properties: {e}")
+        return
 
     crop_w = int(camera_w / factor)
     crop_h = min(int(crop_w / screen_ratio), camera_h)
 
     window = (x, y, crop_w, crop_h)
+    print(f"Setting crop window: {window}")
     try:
         camera.set_controls({'ScalerCrop': window})
     except Exception as e:
@@ -422,13 +436,20 @@ def init_camera(width, height):
 
         print('Started picamera2', ROTATION)
         return picam2
-    except:
-        # for legacy OS use picamera
-        camera = PiCamera()
-        camera.rotation = ROTATION
-        camera.start_preview()
-        print('Started legacy picamera', ROTATION)
-        return camera
+    except Exception as e:
+        print(f"Picamera2 init failed: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            # for legacy OS use picamera
+            camera = PiCamera()
+            camera.rotation = ROTATION
+            camera.start_preview()
+            print('Started legacy picamera', ROTATION)
+            return camera
+        except Exception as e2:
+            print(f"Legacy picamera init also failed: {e2}")
+            raise
 
 
 async def handle_events(device):
@@ -503,10 +524,18 @@ camera = init_camera(width, height)
 import time
 time.sleep(1)
 
+# Debug: check camera type and properties
+print(f"Camera type: {type(camera)}")
+print(f"Has camera_properties: {hasattr(camera, 'camera_properties')}")
+if hasattr(camera, 'camera_properties'):
+    print(f"ScalerCropMaximum available: {'ScalerCropMaximum' in camera.camera_properties}")
+
 try:
     scale(factor)
 except Exception as e:
     print(f"Warning: scale() failed on init: {e}")
+    import traceback
+    traceback.print_exc()
 
 devices = []
 loop = None
