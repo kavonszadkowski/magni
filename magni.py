@@ -244,14 +244,20 @@ def scale(new_factor):
     crop_h = min(int(crop_w / screen_ratio), camera_h)
 
     window = (x, y, crop_w, crop_h)
-    camera.set_controls({'ScalerCrop': window})
+    try:
+        camera.set_controls({'ScalerCrop': window})
+    except Exception as e:
+        print(f"Warning: ScalerCrop failed: {e}")
     overlay(f'{factor:.2f}')
     
     # focus on cropped area if camera supports autofocus
     if 'AfMode' in camera.camera_controls and DISTANCE_TO_SURFACE_CM is None:
-        camera.set_controls({'AfMode': controls.AfModeEnum.Auto, 'AfMetering': controls.AfMeteringEnum.Windows})
-        camera.set_controls({'AfWindows': [window]})
-        camera.autofocus_cycle()
+        try:
+            camera.set_controls({'AfMode': controls.AfModeEnum.Auto, 'AfMetering': controls.AfMeteringEnum.Windows})
+            camera.set_controls({'AfWindows': [window]})
+            camera.autofocus_cycle()
+        except Exception as e:
+            print(f"Warning: autofocus failed: {e}")
 
 # change scale factor by given amount
 def zoom(change_by):
@@ -492,7 +498,15 @@ async def handle_events(device):
 screen = screen_resolution_fbset()
 width, height = screen
 camera = init_camera(width, height)
-scale(factor)
+
+# Give camera time to stabilize before setting controls
+import time
+time.sleep(1)
+
+try:
+    scale(factor)
+except Exception as e:
+    print(f"Warning: scale() failed on init: {e}")
 
 devices = []
 loop = None
