@@ -418,39 +418,61 @@ def init_camera(width, height):
             # this simplifies color mode changes with opencv
             main={'size': (width, height), 'format': 'BGR888'},
             transform=transform)
-        picam2.configure(config)
-        picam2.pre_callback = pre_callback
-
-        def _try_preview(mode_name, mode):
+        def _configure_and_preview(mode_name, mode, fmt):
             try:
+                config = picam2.create_preview_configuration(
+                    main={'size': (width, height), 'format': fmt},
+                    transform=transform)
+                picam2.configure(config)
+                picam2.pre_callback = pre_callback
                 picam2.start_preview(mode, x=0, y=0, width=width, height=height)
-                print(f'Using {mode_name} preview')
+                print(f'Using {mode_name} preview with {fmt}')
                 return True
             except Exception as e:
-                print(f'{mode_name} preview failed: {e}')
+                print(f'{mode_name} preview with {fmt} failed: {e}')
                 return False
 
         preview_candidates = []
         if PREVIEW_MODE == 'auto':
             if os.getenv('DISPLAY'):
-                preview_candidates = [('QTGL', Preview.QTGL), ('DRM', Preview.DRM)]
+                preview_candidates = [
+                    ('QTGL', Preview.QTGL, 'RGB888'),
+                    ('DRM', Preview.DRM, 'BGR888')
+                ]
             else:
-                preview_candidates = [('DRM', Preview.DRM), ('QTGL', Preview.QTGL)]
+                preview_candidates = [
+                    ('DRM', Preview.DRM, 'BGR888'),
+                    ('QTGL', Preview.QTGL, 'RGB888')
+                ]
         elif PREVIEW_MODE == 'qtgl':
-            preview_candidates = [('QTGL', Preview.QTGL), ('DRM', Preview.DRM)]
+            preview_candidates = [
+                ('QTGL', Preview.QTGL, 'RGB888'),
+                ('DRM', Preview.DRM, 'BGR888')
+            ]
         elif PREVIEW_MODE == 'drm':
-            preview_candidates = [('DRM', Preview.DRM), ('QTGL', Preview.QTGL)]
+            preview_candidates = [
+                ('DRM', Preview.DRM, 'BGR888'),
+                ('QTGL', Preview.QTGL, 'RGB888')
+            ]
         else:
-            preview_candidates = [('DRM', Preview.DRM), ('QTGL', Preview.QTGL)]
+            preview_candidates = [
+                ('DRM', Preview.DRM, 'BGR888'),
+                ('QTGL', Preview.QTGL, 'RGB888')
+            ]
 
         preview_started = False
-        for name, mode in preview_candidates:
-            if _try_preview(name, mode):
+        for name, mode, fmt in preview_candidates:
+            if _configure_and_preview(name, mode, fmt):
                 preview_started = True
                 break
 
         if not preview_started:
             try:
+                config = picam2.create_preview_configuration(
+                    main={'size': (width, height), 'format': 'RGB888'},
+                    transform=transform)
+                picam2.configure(config)
+                picam2.pre_callback = pre_callback
                 picam2.start_preview(Preview.NULL)
                 print('Using NULL preview (no visible output)')
             except Exception as e:
