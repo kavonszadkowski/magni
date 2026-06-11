@@ -64,6 +64,10 @@ SHARPNESS = 1
 # The default None will run autofocus on each change of magnification
 DISTANCE_TO_SURFACE_CM = None # replace with your distance, e.g. 24.5
 
+# Preview mode selection: use desktop window if DISPLAY is available,
+# otherwise use DRM fullscreen preview in terminal mode.
+PREVIEW_MODE = 'auto'  # 'auto', 'qtgl', 'drm', or 'null'
+
 # Pre-defined scale factors to cycle through with button/enter
 # These factors are camera pixels to screen pixels ratio, the actual
 # magnification depends also on the camera, the screen size and the distance
@@ -416,7 +420,42 @@ def init_camera(width, height):
             transform=transform)
         picam2.configure(config)
         picam2.pre_callback = pre_callback
-        picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height) # no transform!
+
+        def _try_preview(mode_name, mode):
+            try:
+                picam2.start_preview(mode, x=0, y=0, width=width, height=height)
+                print(f'Using {mode_name} preview')
+                return True
+            except Exception as e:
+                print(f'{mode_name} preview failed: {e}')
+                return False
+
+        preview_candidates = []
+        if PREVIEW_MODE == 'auto':
+            if os.getenv('DISPLAY'):
+                preview_candidates = [('QTGL', Preview.QTGL), ('DRM', Preview.DRM)]
+            else:
+                preview_candidates = [('DRM', Preview.DRM), ('QTGL', Preview.QTGL)]
+        elif PREVIEW_MODE == 'qtgl':
+            preview_candidates = [('QTGL', Preview.QTGL), ('DRM', Preview.DRM)]
+        elif PREVIEW_MODE == 'drm':
+            preview_candidates = [('DRM', Preview.DRM), ('QTGL', Preview.QTGL)]
+        else:
+            preview_candidates = [('DRM', Preview.DRM), ('QTGL', Preview.QTGL)]
+
+        preview_started = False
+        for name, mode in preview_candidates:
+            if _try_preview(name, mode):
+                preview_started = True
+                break
+
+        if not preview_started:
+            try:
+                picam2.start_preview(Preview.NULL)
+                print('Using NULL preview (no visible output)')
+            except Exception as e:
+                print(f'Preview.NULL failed: {e}')
+
         picam2.start()
         picam2.set_controls({
             'Brightness': BRIGHTNESS,
