@@ -4,7 +4,7 @@
 import asyncio
 from datetime import datetime
 import evdev                   # for input from mouse and command line
-from gpiozero import Button    # for external buttons
+#from gpiozero import Button    # for external buttons
 
 # load available camera lib (picamera on legacy, picamera2 on newer OS) 
 try:
@@ -81,8 +81,8 @@ AUDIO = 'aplay'
 # AUDIO = 'aplay -D sysdefault:CARD=vc4hdmi'
 
 # define GPIO pins for (optional) push buttons
-PIN_NUMBER_SCALE =  4 # physical 7, scale button
-PIN_NUMBER_COLOR = 18 # physical 12, colour mode button
+#PIN_NUMBER_SCALE =  4 # physical 7, scale button
+#PIN_NUMBER_COLOR = 18 # physical 12, colour mode button
 
 # some color definitions (as RGB colors), add your own
 BLACK = (0, 0, 0)
@@ -470,7 +470,9 @@ async def handle_events(device):
 
             # numeric keypad
             elif code == evdev.ecodes.KEY_KPENTER: next_factor()
-            elif code == evdev.ecodes.KEY_KPSLASH: color_mode()
+            elif code == evdev.ecodes.KEY_KPASTERISK: color_mode()
+            elif code == evdev.ecodes.KEY_KPPLUS: zoom(0.2)
+            elif code == evdev.ecodes.KEY_KPMINUS: zoom(-0.2)
             elif code == evdev.ecodes.KEY_KP0: scale(10)
             elif code == evdev.ecodes.KEY_KP1: scale(1)
             elif code == evdev.ecodes.KEY_KP2: scale(2)
@@ -482,10 +484,10 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_KP8: scale(8)
             elif code == evdev.ecodes.KEY_KP9: scale(9)
 
-button1 = Button(PIN_NUMBER_SCALE)
-button1.when_pressed = next_factor
-button2 = Button(PIN_NUMBER_COLOR)
-button2.when_pressed = color_mode
+#button1 = Button(PIN_NUMBER_SCALE)
+#button1.when_pressed = next_factor
+#button2 = Button(PIN_NUMBER_COLOR)
+#button2.when_pressed = color_mode
 
 screen = screen_resolution_fbset()
 width, height = screen
