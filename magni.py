@@ -494,6 +494,9 @@ width, height = screen
 camera = init_camera(width, height)
 scale(factor)
 
+devices = []
+loop = None
+
 try:
     devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
     loop = asyncio.new_event_loop()
@@ -503,7 +506,16 @@ try:
         loop.create_task(handle_events(device))
     loop.run_forever()
 
+except Exception as e:
+    print(f"Error: {e}")
 finally:
+    if loop and loop.is_running():
+        loop.stop()
+    for dev in devices:
+        try:
+            dev.ungrab()
+        except:
+            pass
     if bg_process != None and bg_process.poll() == None:
         os.killpg(os.getpgid(bg_process.pid), signal.SIGTERM)
     camera.stop_preview()
