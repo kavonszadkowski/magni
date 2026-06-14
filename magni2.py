@@ -498,6 +498,7 @@ def init_camera(width, height):
             'Contrast': CONTRAST,
             'Saturation': SATURATION,
             'Sharpness': SHARPNESS
+            #'FrameDurationLimits': (33333, 33333)  # will lead to 30 fps on picam v3
         })
         if 'AfMode' in picam2.camera_controls:
             if DISTANCE_TO_SURFACE_CM is None:
